@@ -18,9 +18,9 @@ type Limiter struct {
 	sem         *semaphore.Weighted
 }
 
-func NewLimiter(MaxSize, CurrentSize int64) (limiter *Limiter, err error) {
+func NewLimiter(ctx context.Context, MaxSize, CurrentSize int64) (limiter *Limiter, err error) {
 	s := semaphore.NewWeighted(MaxSize)
-	err = s.Acquire(context.Background(), MaxSize-CurrentSize)
+	err = s.Acquire(ctx, MaxSize-CurrentSize)
 	return &Limiter{
 		maxSize: MaxSize,
 		currentSize: CurrentSize,
@@ -39,19 +39,19 @@ func (l *Limiter) Increment() error {
 	return nil
 }
 
-func (l *Limiter) Decrement() error {
+func (l *Limiter) Decrement(ctx context.Context) error {
 	if l.currentSize == 0 {
 		return MinSizeReachedError
 	}
-	err := l.sem.Acquire(context.Background(), 1)
+	err := l.sem.Acquire(ctx, 1)
 	if err != nil { return err }
 	l.currentSize++
 	l.available--
 	return nil
 }
 
-func (l *Limiter) Acquire() error {
-	return l.sem.Acquire(context.Background(), 1)
+func (l *Limiter) Acquire(ctx context.Context) error {
+	return l.sem.Acquire(ctx, 1)
 }
 
 func (l *Limiter) TryAcquire() bool {
